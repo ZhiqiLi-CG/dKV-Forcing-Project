@@ -1,18 +1,180 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="dKV Forcing trains a causal video generator's memory from its future reads: persistent differentiable KV pages give the exact memory gradient in one traversal, and a writer-specific residual learns what to remember."><title>dKV Forcing | Separating Generation and Memory Representations through a Differentiable KV Cache</title><link rel="stylesheet" href="dkv.css?v=1"><script defer src="dkv.js?v=1"></script></head>
-<body><a class="skip" href="#main">Skip to content</a><nav aria-label="Main navigation"><a class="brand" href="#">dKV Forcing</a><div><a href="#compare">Compare</a><a href="#method">Method</a><a href="#results">Results</a><a href="#bibtex">BibTeX</a></div></nav>
-<main id="main"><header><p class="eyebrow">DIFFERENTIABLE KV CACHE · LONG-HORIZON VIDEO GENERATION</p><h1>dKV<span> Forcing</span></h1><p class="subtitle">Separating Generation and Memory Representations<br>through a Differentiable KV Cache</p><p class="authors"><a href="https://zhiqili-cg.github.io/">Zhiqi Li</a><a href="https://faculty.cc.gatech.edu/~bozhu/">Bo Zhu</a></p><p class="affiliation">Georgia Institute of Technology</p><p class="slogan">Training the cache's memory writes takes no second pass. It takes a cache built for gradients: persistent pages, local rematerialization, and a writer that learns what to remember from its future reads.</p><div class="links"><a href="assets/dkv_forcing.pdf">Paper (PDF) ↗</a><a href="https://github.com/ZhiqiLi-CG/dKV-Forcing">Code ↗</a><a href="https://zhiqili-cg.github.io/">Author homepage ↗</a><a href="#compare">Explore comparisons ↓</a></div></header>
-<div class="hero-videos" id="hero"></div><p class="fine" style="text-align:center;margin-top:10px">Trained on 5 s clips, dKV Forcing generates 60 s and 240 s videos, 12 and 46 times the training clip. Four generations of dKV Forcing, each from a single rollout.</p>
-<section class="intro"><div><p class="eyebrow">01 — OVERVIEW</p><h2>Learn the memory<br>from its future use.</h2></div><div><p>A causal video generator produces two key–value states for every segment: the KV it uses while denoising that segment, and the KV it writes into the cache for later segments to read. In a pretrained generator the two already differ, later segments attend to them differently, and replacing the written KV with the generation KV degrades the continuation.</p><p>dKV Forcing (differentiable KV) learns a dedicated memory representation from its future use. A writer-specific low-rank residual on the shared backbone separates memory writing from generation and is trained through the future reads of what it writes. Persistent differentiable pages with local rematerialization compute, in one temporal traversal, exactly the gradient that a two-pass reconstruction of the same objective computes.</p></div></section>
-<section id="compare"><div class="section-heading"><div><p class="eyebrow">02 — COMPARISONS</p><h2>One prompt. Three training recipes.</h2></div><p>CF++ detaches the writes. SGF trains them with the memory gradient.<br>dKV Forcing adds the writer residual with rollout dropout.</p></div><div class="explorer"><div class="explorer-top"><div class="prompt-tabs" id="prompts" role="group" aria-label="Prompt"></div><div class="controls"><button id="restart">Restart ↺</button><span class="time" id="time">0 s</span></div></div><p class="prompt-text" id="prompt-text"></p><div class="videos" id="gallery" style="--cols:3"></div></div><p class="fine">All models share the Causal Forcing++ initialization, data, schedule and training seed. Videos are the generations evaluated in the paper, played at 16 frames per second.</p></section>
-<section id="method"><div class="section-heading"><div><p class="eyebrow">03 — METHOD</p><h2>Generate, write, and learn from the reads.</h2></div><p>Pages hold the history outside the graph.<br>Handles keep the gradient connections.</p></div><div class="cards"><article><span>01 / PAGES</span><h3>Persistent differentiable pages</h3><p>Each write commits an immutable page outside any replay region. Readers receive the captured prefix through data-free handles, so the graph holds handles while the page data stays outside it.</p></article><article><span>02 / REMATERIALIZATION</span><h3>One temporal traversal</h3><p>Every graph-carrying forward is rematerialized locally in groups of blocks. The retained activation footprint is bounded independently of the persistent state, and no second pass over the clip is needed.</p></article><article><span>03 / WRITER RESIDUAL</span><h3>Writer-specific representation</h3><p>A low-rank residual on the K and V projections is active only when a segment writes its memory. It learns what to remember from the gradients of future reads while the generation backbone stays shared.</p></article></div><figure><img loading="lazy" src="assets/method_overview.png" alt="Overview of dKV Forcing: generation and memory writes per segment, persistent pages, local rematerialization and the gradient from future reads."><figcaption>The single traversal: each segment denoises, writes its page, and later segments read the pages; the gradient of every future read returns to the write that produced the page.</figcaption></figure><figure><img loading="lazy" src="assets/page_contract.png" alt="Three executions compared: the mutable cache, the two-pass reconstruction and dKV Forcing's pages."><figcaption>Three executions of the same traversal. The mutable cache runs out of memory under checkpoint replay, the two-pass reconstruction holds the whole-sequence graph, and the pages keep only the committed state and the group entry states.</figcaption></figure></section>
-<section id="results"><div class="section-heading"><div><p class="eyebrow">04 — RESULTS</p><h2>Exact gradient. Lower cost. Longer videos.</h2></div><p>1.3B Causal Forcing++ generator, 5 s training clips.<br>VBench-Long at 60 s and 240 s.</p></div><div class="stat-row"><div><b>7%</b><span>generator-update overhead over detached-write training for the full memory gradient</span></div><div><b>−28%</b><span>resident memory against the two-pass reconstruction of the same gradient</span></div><div><b>−20.8%</b><span>training-cycle time against the two-pass reconstruction</span></div><div><b>+8.5</b><span>VBench-Long aesthetic quality over SGF at 240 s (+6.6 at 60 s), with the highest subject and background consistency</span></div></div><figure><img loading="lazy" src="assets/tradeoff.png" alt="Fidelity versus motion at 60 s and 240 s for the compared training recipes."><figcaption>Fidelity versus motion. Memory-gradient training raises long-horizon fidelity; rollout dropout of the writer residual keeps most of the gain at the motion of detached-write training.</figcaption></figure></section>
-<section id="bibtex"><div class="section-heading"><div><p class="eyebrow">05 — CITATION</p><h2>BibTeX</h2></div></div><pre class="bib">@article{li2026dkvforcing,
-  title   = {dKV Forcing: Separating Generation and Memory Representations through a Differentiable KV Cache},
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dKV Forcing: Separating Generation and Memory Representations through a Differentiable KV Cache</title>
+<meta name="description" content="dKV Forcing trains a causal video generator's memory from its future reads: persistent differentiable KV pages compute the exact memory gradient in one temporal traversal, and a writer-specific residual learns what to remember.">
+<meta property="og:title" content="dKV Forcing">
+<meta property="og:description" content="Separating generation and memory representations through a differentiable KV cache. Trained on 5 s clips, generating up to four minutes.">
+<meta property="og:image" content="https://zhiqili-cg.github.io/dKV-Forcing-Project/assets/teaser_grid.jpg">
+<meta property="og:url" content="https://zhiqili-cg.github.io/dKV-Forcing-Project/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f5fae'/%3E%3Ctext x='32' y='41' font-family='Arial,Helvetica,sans-serif' font-weight='700' font-size='24' text-anchor='middle' fill='white'%3EdKV%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="page.css?v=3">
+<script defer src="page.js?v=3"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<nav class="top" aria-label="Sections"><div class="wrap"><a class="brand" href="#">dKV Forcing</a><div class="links"><a href="#abstract">Abstract</a><a href="#compare">Results</a><a href="#how">How it works</a><a href="#method">Method</a><a href="#numbers">Numbers</a><a href="#bibtex">BibTeX</a></div></div></nav>
+
+<main id="main">
+<header class="head"><div class="wrap">
+  <span class="venue">Long-horizon video generation</span>
+  <h1 class="title"><span class="name"><em>dKV</em> Forcing</span><span class="sub">Separating Generation and Memory Representations through a Differentiable KV Cache</span></h1>
+  <div class="authors"><a href="https://zhiqili-cg.github.io/">Zhiqi Li</a><a href="https://faculty.cc.gatech.edu/~bozhu/">Bo Zhu</a></div>
+  <div class="affil">Georgia Institute of Technology</div>
+  <div class="buttons">
+    <a class="btn" href="assets/dkv_forcing.pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>Paper</a>
+    <a class="btn" href="https://github.com/ZhiqiLi-CG/dKV-Forcing"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.56-.29-5.25-1.28-5.25-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.39-5.27 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5z"/></svg>Code</a>
+    <a class="btn ghost" href="#how"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z" fill="currentColor"/></svg>Interactive walkthrough</a>
+    <a class="btn ghost" href="#bibtex">BibTeX</a>
+  </div>
+  <p class="tldr"><b>Training the cache's memory writes takes no second pass.</b> It takes a cache built for gradients: persistent pages, local rematerialization, and a writer that learns what to remember from its future reads.</p>
+</div></header>
+
+<section class="teaser"><div class="wrap">
+  <div class="vgrid" id="hero"></div>
+  <p class="teaser-cap">Trained on 5 s clips, generating 60 s and 240 s.</p>
+</div></section>
+
+<section class="sec soft" id="abstract"><div class="wrap narrow abstract">
+  <h2>Abstract</h2>
+  <div style="height:22px"></div>
+  <p>A causal video generator produces two key–value (KV) states for every segment: the KV it uses while denoising that segment, and the KV it writes into the cache for later segments to read. In a pretrained generator the two already differ substantially, later segments attend to them differently, and replacing the written KV with the generation KV degrades the continuation.</p>
+  <p>We propose dKV Forcing (dKV denotes differentiable KV) to learn a dedicated memory representation from its future use: a writer-specific low-rank residual on the shared backbone separates memory writing from generation and is trained through the future reads of what it writes. Learning a write from its future use needs gradients through the cache, which the mutable cache in common use cannot provide. dKV Forcing replaces the training-time cache by persistent differentiable pages with local rematerialization and, in one temporal traversal, computes exactly the gradient that a two-pass reconstruction of the same objective computes.</p>
+  <p>One traversal computes the full memory gradient at 7% generator-update overhead over detached-write training, with 28% less resident memory and 20.8% shorter training cycles than the two-pass reconstruction. Over Self Gradient Forcing (SGF), the same objective trained with the same traversal, writer adaptation raises VBench-Long aesthetic quality by 6.6 points at 60 s and 8.5 points at 240 s with the highest subject and background consistency, and rollout dropout of the residual keeps most of this gain while restoring the motion of training without write gradients.</p>
+</div></section>
+
+<section class="sec" id="compare"><div class="wrap">
+  <h2>Side-by-side comparisons</h2>
+  <p class="lead">Three training recipes, one prompt. Drag the timeline to compare.</p>
+  <div class="panel">
+    <div class="tabs" id="cmp-tabs" role="tablist" aria-label="Prompt"></div>
+    <details class="prompt"><summary>Prompt</summary><p id="cmp-prompt-text"></p></details>
+    <div class="cmp-grid" id="cmp-grid"></div>
+    <div class="ctrl">
+      <button class="pbtn" id="cmp-play" aria-label="Pause"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4.2v16H6zM13.8 4H18v16h-4.2z"/></svg></button>
+      <div class="scrub"><input type="range" id="cmp-range" min="0" max="60" step="0.05" value="0" aria-label="Timeline"><div class="ticks" id="cmp-ticks"></div></div>
+      <span class="time" id="cmp-time">0:00 / 0:00</span>
+      <div class="speed" id="cmp-speed" role="group" aria-label="Playback speed"><button data-rate="1" aria-pressed="true">1×</button><button data-rate="2" aria-pressed="false">2×</button><button data-rate="4" aria-pressed="false">4×</button></div>
+    </div>
+  </div>
+  <p class="fine">Same initialization, data, schedule and training seed for all three. Ticks mark the frames shown in the paper.</p>
+</div></section>
+
+<section class="sec soft" id="how"><div class="wrap">
+  <h2>How the gradient reaches a write</h2>
+  <p class="lead">One training step on a 5 s clip: 21 latent frames forward, then backward. Click any element for details and code.</p>
+  <div class="tabs wt-tabs" id="wt-tabs" role="tablist" aria-label="Execution"></div>
+  <div class="stage">
+    <svg id="wt-svg" class="sv" viewBox="0 0 1000 336" role="img" aria-label="Animated execution of one generator update"></svg>
+    <div class="wt-transport">
+      <button class="nav" id="wt-prev" aria-label="Previous step"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2.5v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="nav play" id="wt-play" aria-label="Play"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+      <button class="nav" id="wt-next" aria-label="Next step"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 5H18v14h-2.5zM4 5v14l11-7z"/></svg></button>
+      <div class="wt-track"><input type="range" class="seek" id="wt-range" min="0" max="1000" step="0.1" value="0" aria-label="Animation timeline"><div class="bands" id="wt-bands"></div></div>
+      <div class="speed" id="wt-speed" role="group" aria-label="Animation speed"><button data-rate="0.5" aria-pressed="false">0.5×</button><button data-rate="1" aria-pressed="true">1×</button><button data-rate="2" aria-pressed="false">2×</button></div>
+    </div>
+    <svg id="wt-chart" viewBox="0 0 1000 136" role="img" aria-label="Measured allocated memory"></svg>
+    <p class="chart-cap">Measured memory of the same step (rank 0, 4 H100, batch 2), aligned frame by frame. Click to jump.</p>
+  </div>
+  <div class="wt-below">
+    <div class="explain">
+      <span class="phase F" id="wt-phase">Forward</span>
+      <h3 id="wt-title"></h3>
+      <p id="wt-text"></p>
+      <p class="hint">Click any element in the animation for its explanation and code.</p>
+    </div>
+    <div class="code">
+      <div class="bar"><span class="dots3"><i></i><i></i><i></i></span><span class="ttl" id="code-title"></span><span class="src" id="code-src"></span></div>
+      <div class="from" id="code-from"><span id="code-from-label"></span><button id="code-back">Back to the timeline ↺</button></div>
+      <pre id="code-pre"></pre>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="method"><div class="wrap">
+  <h2>Method</h2>
+  <p class="lead">Learn each write from its future reads, in one pass.</p>
+  <figure class="paper-fig"><img loading="lazy" src="assets/method_overview.png" alt="dKV Forcing: generation, memory writing and the memory gradient in one temporal traversal.">
+    <figcaption><b>One temporal traversal.</b> Each segment generates (G<sub>θ</sub>) and writes its memory (𝒦<sub>θ,φ</sub>, writer residual φ). Writes are committed once to the page table; later segments read them through handles, and the gradient of every read returns to the write that produced it.</figcaption></figure>
+  <div class="cards">
+    <article class="card"><span class="k">01 · Pages</span><h3>Persistent differentiable pages</h3><p>Each write commits an immutable page outside any replay region. Readers receive the captured prefix through data-free handles, so the graph holds handles while the page data stays outside it.</p></article>
+    <article class="card"><span class="k">02 · Rematerialization</span><h3>One temporal traversal</h3><p>Every graph-carrying forward is rematerialized locally in groups of blocks. The retained activation footprint is bounded independently of the persistent state, and no second pass over the clip is needed.</p></article>
+    <article class="card"><span class="k">03 · Writer residual</span><h3>A writer-specific representation</h3><p>A rank-64 residual on the K and V projections is active only when a segment writes its memory. It learns what to remember from the gradients of future reads while the generation backbone stays shared.</p></article>
+  </div>
+  <figure class="paper-fig"><img loading="lazy" src="assets/page_contract.png" alt="Autograd graphs and backward replay under three cache execution strategies.">
+    <figcaption><b>Three ways to differentiate through the cache.</b> (a) In-place writes are replayed in backward and run out of memory. (b) The two-pass reconstruction recomputes the whole sequence. (c) dKV Forcing commits each write once to an immutable page and replays one block group at a time.</figcaption></figure>
+</div></section>
+
+<section class="sec soft" id="numbers"><div class="wrap">
+  <h2>Results</h2>
+  <p class="lead">1.3B causal generator, 5 s training clips, three training seeds.</p>
+  <div class="stats">
+    <div class="stat"><b>7%</b><span>overhead for the full memory gradient</span></div>
+    <div class="stat"><b>−28%</b><span>resident memory vs. two-pass</span></div>
+    <div class="stat"><b>−20.8%</b><span>training time vs. two-pass</span></div>
+    <div class="stat"><b>+8.5</b><span>aesthetic quality over SGF at 240 s</span></div>
+  </div>
+
+  <div class="tcard"><table>
+    <caption>Long-horizon quality<small>VBench-Long, frame-wise. Bold: best, underline: second.</small></caption>
+    <thead><tr><th>Method</th><th>Aesthetic ↑</th><th>Imaging ↑</th><th>Subject ↑</th><th>Background ↑</th><th>Dynamic ↑</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="6">60 s</td></tr>
+      <tr><td>CF++</td><td>52.7<span class="sd">±1.4</span></td><td>63.3<span class="sd">±1.6</span></td><td>94.7<span class="sd">±1.3</span></td><td>94.5<span class="sd">±0.7</span></td><td class="best">76.5<span class="sd">±19.0</span></td></tr>
+      <tr><td>SGF</td><td>56.2<span class="sd">±1.4</span></td><td>67.4<span class="sd">±2.2</span></td><td>96.5<span class="sd">±0.4</span></td><td class="second">95.7<span class="sd">±0.5</span></td><td>38.5<span class="sd">±6.9</span></td></tr>
+      <tr><td>Writer LoRA</td><td class="best">62.8<span class="sd">±0.4</span></td><td class="best">69.7<span class="sd">±0.6</span></td><td class="best">98.2<span class="sd">±0.2</span></td><td class="best">96.9<span class="sd">±0.2</span></td><td>21.8<span class="sd">±17.5</span></td></tr>
+      <tr class="ours"><td>dKV Forcing (ours)</td><td class="second">59.8<span class="sd">±1.3</span></td><td class="second">68.8<span class="sd">±1.3</span></td><td class="second">96.6<span class="sd">±1.2</span></td><td>94.8<span class="sd">±1.1</span></td><td class="second">71.4<span class="sd">±34.5</span></td></tr>
+      <tr class="grp"><td colspan="6">240 s</td></tr>
+      <tr><td>CF++</td><td>49.0<span class="sd">±2.5</span></td><td>61.7<span class="sd">±2.7</span></td><td>93.8<span class="sd">±1.0</span></td><td>94.4<span class="sd">±0.7</span></td><td class="best">81.7<span class="sd">±14.9</span></td></tr>
+      <tr><td>SGF</td><td>51.3<span class="sd">±1.7</span></td><td>64.6<span class="sd">±3.5</span></td><td>95.9<span class="sd">±0.3</span></td><td class="second">95.3<span class="sd">±0.4</span></td><td>38.9<span class="sd">±7.4</span></td></tr>
+      <tr><td>Writer LoRA</td><td class="best">59.8<span class="sd">±1.4</span></td><td class="second">67.7<span class="sd">±1.3</span></td><td class="best">97.7<span class="sd">±0.3</span></td><td class="best">96.4<span class="sd">±0.3</span></td><td>20.5<span class="sd">±19.2</span></td></tr>
+      <tr class="ours"><td>dKV Forcing (ours)</td><td class="second">57.4<span class="sd">±0.4</span></td><td class="best">68.2<span class="sd">±0.5</span></td><td class="second">96.2<span class="sd">±1.0</span></td><td>94.8<span class="sd">±0.7</span></td><td class="second">72.0<span class="sd">±33.8</span></td></tr>
+    </tbody></table>
+    <p class="tnote">Writer LoRA = SGF + writer residual. Full tables in the paper.</p>
+  </div>
+
+  <div class="tcard"><table>
+    <caption>Training cost<small>4 H100, batch 2 per GPU. Bold: best, underline: second, among methods with the memory gradient.</small></caption>
+    <thead><tr><th>Method</th><th>Cycle (s)</th><th>vs. two-pass</th><th>Generator update (s)</th><th>Generator peak (GiB)</th><th>Resident (GiB)</th></tr></thead>
+    <tbody>
+      <tr><td>Two-pass reconstruction</td><td>122.8</td><td>—</td><td>35.7</td><td>69.9</td><td>40.7</td></tr>
+      <tr><td>CF++ (no memory gradient)</td><td>104.7</td><td>−14.8%</td><td>31.8</td><td>55.9</td><td>40.7</td></tr>
+      <tr><td>Mutable cache, write differentiated</td><td class="oom" colspan="5">out of memory in the first generator backward</td></tr>
+      <tr class="ours"><td>dKV Forcing (default)</td><td class="second">97.3</td><td>−20.8%</td><td class="second">33.9</td><td>62.1</td><td class="best">29.2</td></tr>
+      <tr><td>dKV Forcing (fused)</td><td class="best">95.9</td><td>−21.9%</td><td class="best">32.4</td><td>65.6</td><td class="best">29.2</td></tr>
+      <tr><td>dKV Forcing (hidden)</td><td>105.9</td><td>−13.7%</td><td>43.1</td><td class="best">56.1</td><td class="second">29.3</td></tr>
+      <tr><td>dKV Forcing (fused+hidden)</td><td>100.9</td><td>−17.8%</td><td>37.0</td><td class="second">58.9</td><td class="second">29.3</td></tr>
+    </tbody></table>
+    <p class="tnote">All executions match the two-pass gradient to 4.1×10⁻¹² in fp64.</p>
+  </div>
+
+  <div class="split">
+    <img loading="lazy" src="assets/tradeoff.png" alt="Fidelity versus motion at 60 s and 240 s.">
+    <div>
+      <h3>Fidelity and motion</h3>
+      <p>The writer residual raises fidelity. Rollout dropout of the residual brings the motion back: at 240 s, 57.4 aesthetic and 72 dynamic against 51.3 and 39 for SGF.</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="sec" id="bibtex"><div class="wrap narrow">
+  <h2>BibTeX</h2>
+  <div style="height:22px"></div>
+  <div class="bibwrap"><pre class="bib" id="bib">@article{li2026dkvforcing,
+  title   = {dKV Forcing: Separating Generation and Memory Representations
+             through a Differentiable KV Cache},
   author  = {Li, Zhiqi and Zhu, Bo},
   journal = {arXiv preprint},
   year    = {2026}
-}</pre></section>
+}</pre><button class="copy" id="copy-bib">Copy</button></div>
+</div></section>
 </main>
-<footer><span>dKV Forcing · Zhiqi Li &amp; Bo Zhu</span><a href="https://zhiqili-cg.github.io/">Author homepage</a><a href="mailto:zli3167@gatech.edu">Contact</a><a href="#">Back to top ↑</a></footer>
-</body></html>
+
+<footer class="foot"><div class="wrap"><span>dKV Forcing · Zhiqi Li and Bo Zhu · Georgia Institute of Technology</span><a href="https://zhiqili-cg.github.io/">Zhiqi Li's homepage</a><a href="https://github.com/ZhiqiLi-CG/dKV-Forcing">Code</a><a href="mailto:zli3167@gatech.edu">Contact</a></div></footer>
+</body>
+</html>
