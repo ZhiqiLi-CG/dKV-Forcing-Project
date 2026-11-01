@@ -24,3 +24,5 @@ body{background:#fff;font-family:Arial,Helvetica,sans-serif;color:#303438}nav{bo
 .stat-row span{font-size:13px;color:var(--muted)}
 pre.bib{background:white;border:1px solid var(--line);border-radius:8px;padding:16px;font-size:13px;overflow:auto;max-width:none}
 @media(max-width:800px){.hero-videos{grid-template-columns:1fr}.stat-row{grid-template-columns:repeat(2,1fr)}.videos{grid-template-columns:1fr}}
+
+.slogan{max-width:820px;margin:22px auto 0;padding:14px 20px;border-left:4px solid var(--green);background:#eef5f1;border-radius:6px;font-size:17px;line-height:1.5;text-align:left;color:var(--ink)}
