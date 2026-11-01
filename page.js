@@ -333,6 +333,14 @@ const PAGES = {
     if (rd && rd.k > 0) { const xa = cx(0) - 14, xb = cx(rd.k - 1) + 14; set(R.br, { d: `M${xa},284 L${xa},289 L${xb},289 L${xb},284` }); show(R.br, true); } else show(R.br, false);
     show(R.brT, false);
     if (gd && gd.k > 0) { const xa = cx(0) - 14, xb = cx(gd.k - 1) + 14; set(R.spanB, { x: xa - 2, width: xb - xa + 4 }); show(R.spanB, true); } else show(R.spanB, false);
+    const zr = sel ? sel : inFwd ? { role: u < 0.8 ? 'G' : 'W', k: s.i } : cur ? { role: cur.kind === 'BG' ? 'G' : 'W', k: cur.i } : null;
+    WT.zs = {
+      committed: Array.from({ length: NF - 1 }, (_, j) => done.P(j)), cnt, consumed,
+      reader: inFwd && s.i === NF - 1 && u >= 0.8 ? null : zr,
+      reading: !!sel || (inFwd && u < 0.92), replay: !sel && !!cur, split: !sel && !!cur && u <= 0.95,
+      commitTo: !sel && inFwd && u >= 0.92 && s.i < NF - 1 ? s.i : -1,
+      toW: !sel && cur && cur.kind === 'BW' ? cur.i : -1, fade: ended ? 1 - u : 1, flowing: !sel
+    };
     show(R.params, !!(cur && cur.kind === 'BW'));
     show(R.released, ended, u);
   },
@@ -615,6 +623,74 @@ const TWOPASS = {
 
 function sub(n) { return String(n).split('').map(d => '₀₁₂₃₄₅₆₇₈₉'[+d]).join(''); }
 
+/* ---------- zoom: inside one transformer layer (Figure 5 of the paper, animated) */
+const ZX = j => 198 + 35.6 * j;
+function setRich(t, str) { t.replaceChildren(); rich(t, str, +t.getAttribute('font-size')); }
+const ZOOM = {
+  build(svg) {
+    svg.replaceChildren(); arrowDefs(svg);
+    const Z = {}, L = ZX(0) - 24, Rr = ZX(20) + 24;
+    T(svg, 164, 26, 'one layer', { 'font-size': 12.5, fill: C.accent, 'text-anchor': 'end', 'font-weight': 700 });
+    for (const [y, t] of [[82, 'attention K/V'], [122, 'gradients'], [155, 'handles'], [235, 'page table']]) T(svg, 164, y, t, { 'font-size': 12.5, 'text-anchor': 'end', 'font-weight': 600 });
+    Z.frame = clickable(E('rect', { x: L, y: 54, width: Rr - L, height: 132, rx: 10, fill: 'none', stroke: C.grad, 'stroke-dasharray': '6 5', 'stroke-width': 1.3 }, svg), 'graph');
+    T(svg, Rr - 6, 181, 'autograd graph', { 'font-size': 11.5, fill: C.grad, 'text-anchor': 'end' });
+    Z.tb = clickable(E('rect', { x: L, y: 207, width: Rr - L, height: 44, rx: 8, fill: '#fbfcfd', stroke: C.line }, svg), 'table');
+    Z.row = clickable(E('rect', { y: 63, height: 28, rx: 6, fill: '#fff', stroke: C.muted, 'stroke-width': 1.1, opacity: 0 }, svg), 'snapshot');
+    Z.read = []; Z.cc = []; Z.split = []; Z.buf = []; Z.down = []; Z.h = []; Z.hl = []; Z.slot = []; Z.slotT = [];
+    for (let j = 0; j < NF - 1; j++) {
+      Z.read.push(vline(svg, ZX(j) - 9, 212, 93, { stroke: C.wri, 'stroke-width': 1.3, 'stroke-dasharray': '4 3', 'marker-end': 'url(#ar-teal)', opacity: 0 }));
+      Z.cc.push(E('rect', { x: ZX(j) - 14, y: 67, width: 28, height: 20, rx: 3, fill: C.wriF, stroke: C.wri, 'stroke-width': 0.8, opacity: 0 }, svg));
+      Z.split.push(vline(svg, ZX(j) + 6, 91, 110, { stroke: C.grad, 'stroke-width': 1.5, 'marker-end': 'url(#ar-purple)', opacity: 0 }));
+      Z.buf.push(clickable(E('rect', { x: ZX(j) - 2, y: 112, width: 16, height: 12, rx: 2, fill: C.gradF, stroke: C.grad, opacity: 0 }, svg), 'buffer'));
+      Z.down.push(vline(svg, ZX(j) + 6, 124, 142, { stroke: C.grad, 'stroke-width': 1.8, 'marker-end': 'url(#ar-purple)', opacity: 0 }));
+      Z.hl.push(vline(svg, ZX(j) + 6, 157, 213, { stroke: C.grey, 'stroke-dasharray': '1.5 3', opacity: 0 }));
+      Z.h.push(clickable(E('circle', { cx: ZX(j) + 6, cy: 150, r: 6.5, fill: '#fff', stroke: C.grad, 'stroke-width': 1.3, opacity: 0 }, svg), 'handle'));
+      Z.slot.push(clickable(E('rect', { x: ZX(j) - 15, y: 214, width: 30, height: 32, rx: 4, fill: '#fff', stroke: C.line }, svg), 'page'));
+      Z.slotT.push(T(svg, ZX(j), 234, 'P_{' + j + '}', { 'font-size': 10.5, 'text-anchor': 'middle', fill: '#fff', opacity: 0 }));
+    }
+    Z.own = E('rect', { y: 67, width: 28, height: 20, rx: 3, opacity: 0 }, svg);
+    Z.ownT = T(svg, 0, 81, 'K,V', { 'font-size': 9.5, 'text-anchor': 'middle', opacity: 0 });
+    Z.up = E('line', { stroke: C.muted, 'stroke-width': 1.2, 'marker-end': 'url(#ar-ink)', opacity: 0 }, svg);
+    Z.box = E('rect', { y: 10, width: 128, height: 30, rx: 6, 'stroke-width': 1.6, opacity: 0 }, svg);
+    Z.boxT = T(svg, 0, 30, '', { 'font-size': 12.5, 'text-anchor': 'middle', opacity: 0 });
+    Z.boxG = E('g', {}, svg); Z.boxG.append(Z.box, Z.boxT); clickable(Z.boxG, 'G');
+    Z.commit = E('path', { fill: 'none', stroke: C.wri, 'stroke-width': 2, 'marker-end': 'url(#ar-teal)', opacity: 0 }, svg);
+    Z.toW = E('path', { fill: 'none', stroke: C.grad, 'stroke-width': 2, 'marker-end': 'url(#ar-purple)', opacity: 0 }, svg);
+    Z.br = E('path', { fill: 'none', stroke: C.wri, 'stroke-width': 1.3, opacity: 0 }, svg);
+    return Z;
+  },
+  render(Z, st) {
+    const r = st.reader, k = r ? r.k : 0, nRead = r ? k : 0;
+    for (let j = 0; j < NF - 1; j++) {
+      const c = st.committed[j], bufOn = (st.cnt[j] > 0 && !st.consumed[j]) || st.toW === j;
+      set(Z.slot[j], { fill: c ? C.page : '#fff', stroke: c ? C.wri : C.line, 'fill-opacity': st.fade });
+      show(Z.slotT[j], c, st.fade);
+      show(Z.h[j], c, st.fade); show(Z.hl[j], c, 0.9 * st.fade);
+      set(Z.h[j], { 'stroke-width': st.toW === j ? 2.6 : 1.3, fill: st.toW === j ? C.gradF : '#fff' });
+      show(Z.buf[j], bufOn); set(Z.buf[j], { 'fill-opacity': clamp(0.25 + st.cnt[j] / 39, 0.25, 1) });
+      show(Z.down[j], st.toW === j); flow(Z.down[j], st.toW === j);
+      const rd = j < nRead;
+      show(Z.cc[j], rd); show(Z.read[j], rd && (st.reading || st.replay), st.reading ? 1 : 0.45); flow(Z.read[j], rd && st.reading && st.flowing);
+      show(Z.split[j], rd && st.split); flow(Z.split[j], rd && st.split);
+    }
+    if (r) {
+      const xa = ZX(0) - 18, xb = ZX(k) + 18;
+      set(Z.row, { x: xa, width: xb - xa }); show(Z.row, true);
+      const col = r.role === 'G' ? [C.genF, C.gen] : [C.wriF, C.wri];
+      set(Z.own, { x: ZX(k) - 14, fill: col[0], stroke: col[1] }); show(Z.own, true);
+      set(Z.ownT, { x: ZX(k) }); show(Z.ownT, true);
+      const bx = clamp(ZX(k) - 64, ZX(0) - 24, ZX(20) + 24 - 128);
+      set(Z.box, { x: bx, fill: col[0], stroke: st.replay ? C.grad : col[1] }); show(Z.box, true);
+      set(Z.boxT, { x: bx + 64 }); setRich(Z.boxT, (r.role === 'G' ? 'G_{θ}' : '𝒦_{θ,φ}') + ' · frame ' + k); show(Z.boxT, true);
+      Z.boxG.dataset.info = r.role; Z.boxG.setAttribute('data-frame', k); Z.boxG.setAttribute('data-role', r.role);
+      set(Z.up, { x1: ZX(k), x2: ZX(k), y1: 62, y2: 42 }); show(Z.up, true);
+      if (k > 0 && st.reading) { const a = ZX(0) - 15, b = ZX(k - 1) + 15; set(Z.br, { d: `M${a},250 L${a},256 L${b},256 L${b},250` }); show(Z.br, true); } else show(Z.br, false);
+      if (st.commitTo >= 0) { const x = ZX(st.commitTo); set(Z.commit, { d: `M${bx + 128},25 C${bx + 190},25 ${x + 44},196 ${x + 4},212` }); show(Z.commit, true); flow(Z.commit, true); } else show(Z.commit, false);
+      if (st.toW >= 0) { const x = ZX(st.toW) + 13; set(Z.toW, { d: `M${x},150 C${x + 70},150 ${bx + 190},25 ${bx + 130},25` }); show(Z.toW, true); flow(Z.toW, true); } else show(Z.toW, false);
+    } else { [Z.row, Z.own, Z.ownT, Z.box, Z.boxT, Z.up, Z.commit, Z.toW, Z.br].forEach(e => show(e, false)); }
+  }
+};
+
 const SCHEMES = [PAGES, MUTABLE, DETACHED, TWOPASS];
 const WT = { scheme: null, R: null, S: null, total: 0, t: 0, playing: false, speed: 1, last: 0, pinned: false };
 
@@ -635,7 +711,7 @@ function initWalkthrough() {
     WT.speed = +b.dataset.rate; $$('#wt-speed button').forEach(x => x.setAttribute('aria-pressed', x === b));
   }));
   $('#code-back').addEventListener('click', () => { unpin(); draw(); });
-  $('#wt-svg').addEventListener('click', e => {
+  const onPick = e => {
     const el = e.target.closest('.clk'); if (!el) return;
     const inf = WT.scheme.info[el.dataset.info]; if (!inf) return;
     wtPlay(false); WT.pinned = true;
@@ -650,7 +726,8 @@ function initWalkthrough() {
     $('#wt-title').textContent = title; $('#wt-text').textContent = text;
     showCode(inf[2], inf[3], title);
     draw();
-  });
+  };
+  $('#wt-svg').addEventListener('click', onPick); $('#wt-zoom').addEventListener('click', onPick);
   $('#wt-chart').addEventListener('click', e => {
     const box = $('#wt-chart').getBoundingClientRect(); const x = (e.clientX - box.left) / box.width * 1000;
     const tr = DATA.traces[WT.scheme.trace]; const tt = (x - 60) / 920 * tr.tend;
@@ -667,6 +744,8 @@ function selectScheme(k) {
   $$('#wt-tabs .tab').forEach((b, j) => b.setAttribute('aria-selected', j === k));
   const svg = $('#wt-svg'); svg.replaceChildren();
   WT.R = sc.build(svg);
+  const zs = $('#wt-zoom'); WT.zs = null;
+  if (sc.id === 'pages') { zs.style.display = ''; WT.Z = ZOOM.build(zs); } else { zs.style.display = 'none'; WT.Z = null; }
   const tr = DATA.traces[sc.trace];
   WT.S = sc.segments(tr); WT.total = WT.S.reduce((a, s) => a + s.dur, 0); WT.t = 0;
   buildBands(); buildChart(tr); draw();
@@ -730,6 +809,7 @@ function memAt(tr, tt) {
 function draw() {
   const [si, u] = locate(WT.t);
   WT.scheme.render(WT.R, WT.S, si, u);
+  if (WT.Z && WT.zs) ZOOM.render(WT.Z, WT.zs);
   const r = $('#wt-range'); r.value = 1000 * WT.t / WT.total; r.style.setProperty('--p', (100 * WT.t / WT.total) + '%');
   const tt = unitsToTrace(WT.t), { X, Y, tr } = WT.chartMap, m = memAt(tr, tt);
   set(WT.cursor, { x1: X(tt), x2: X(tt) }); set(WT.dot, { cx: X(tt), cy: Y(m) });

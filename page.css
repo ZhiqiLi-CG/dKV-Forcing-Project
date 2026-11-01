@@ -222,3 +222,5 @@ details.prompt summary{display:inline-block;cursor:pointer;font-size:13px;font-w
 details.prompt summary::-webkit-details-marker{display:none}
 details.prompt[open] summary{color:var(--ink)}
 details.prompt p{margin:10px auto 0;color:var(--muted);font-size:13.5px;font-style:italic;line-height:1.55;max-width:none}
+
+#wt-zoom{display:block;width:100%;min-width:720px;height:auto;font-family:"Inter",system-ui,sans-serif;border-top:1px dashed var(--line);margin-top:6px;padding-top:8px;background:linear-gradient(#fbfcfe,#fff)}
